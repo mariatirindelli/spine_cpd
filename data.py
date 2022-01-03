@@ -329,7 +329,12 @@ class SceneflowDataset(Dataset):
         file_id = os.path.split(self.data_path[index])[-1].split(".")[0]
 
         tmp, flow, source_pc, target_pc = read_numpy_file(fp=self.data_path[index])
-        print(tmp)
+
+        # spurious code to retrieve constraints
+        # print("\n----")
+        # print(file_id)
+        # print(source_pc[tmp, :])
+        # return source_pc[tmp, :], file_id
 
         # Loading the constraint in the new way they're saved
         constraints = self.get_constraints(file_id)

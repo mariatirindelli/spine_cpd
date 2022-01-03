@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 
 
 class BiomechanicalCpd(pycpd.RigidRegistration):
-    def __init__(self, X, Y, springs: List[Tuple] = [], alpha=0.0, sigma=None, max_iterations=None, R=None, t=None):
+    def __init__(self, X, Y, springs: List[Tuple] = [], alpha=0.0, sigma=None, max_iterations=None, R=None, t=None,
+                 fix_variance=False):
         self.spring_indexes = [item[0] for item in springs]
 
         self.alpha = alpha
         self.N_real = X.shape[0]  # number of points without considering the one added to add the spring constraint
-
+        self.fix_variance = fix_variance
         self.X = X
 
         if len(springs) > 0:
@@ -83,12 +84,22 @@ class BiomechanicalCpd(pycpd.RigidRegistration):
 
         self.P = np.divide(P, den)
 
+        if np.max(np.abs(self.P)) == 0:
+            self.P = self.P + np.finfo(float).eps
+
         if len(self.spring_indexes) > 0:
             self.update_spring_probabilities()
 
         self.Pt1 = np.sum(self.P, axis=0)
         self.P1 = np.sum(self.P, axis=1)
         self.Np = np.sum(self.P1)
+
+    def maximization(self):
+        self.update_transform()
+        self.transform_point_cloud()
+
+        if not self.fix_variance:
+            self.update_variance()
 
     def update_spring_probabilities(self):
         self.P[:, -len(self.spring_indexes)::] = 0
