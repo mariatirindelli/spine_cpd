@@ -23,7 +23,7 @@ for i, data in enumerate(test_set):
     arr, file_id = data
     constr = []
     for i in range(arr.shape[0]-1):
-        slice = arr[i:i+1]
+        slice = arr[i:i+2]
         if arr[i, -1] == arr[i+1, -1]:
             continue
         print(arr[i, -1], "  ", arr[i+1, -1], "  ", np.mean(slice, axis=0))

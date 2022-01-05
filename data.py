@@ -157,10 +157,13 @@ class SceneflowDataset(Dataset):
         self.raycasted = raycasted
         self.augment = augment
         self.data_path = glob.glob(os.path.join(self.root, '*.npz'))
+        spine_5_6 = [item for item in self.data_path if "ts_19" in item and ("spine5" in item or "spine6" in item) ]
         self.data_path = [item for item in self.data_path if "ts_20" in item]
+        self.data_path.extend(spine_5_6)
         self.use_target_normalization_as_feature = use_target_normalization_as_feature
 
-        self.spine_splits = {"test": np.arange(1, 23)}
+        # self.spine_splits = {"test": np.arange(1, 23)}
+        self.spine_splits = {"test": [4]}
         self.data_path = [path for path in self.data_path if _get_spine_number(path) in self.spine_splits[self.mode]]
 
         if "augment_test" in kwargs.keys() and kwargs["augment_test"]:

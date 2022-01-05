@@ -66,8 +66,8 @@ class BiomechanicalCpd(pycpd.RigidRegistration):
         additional_points = [item[1] for item in springs]
         self.X[-len(self.spring_indexes)::, :] = 0
 
-        for i, spring_index in enumerate(self.spring_indexes):
-            self.X[i, :] = additional_points[i]
+        for i, _ in enumerate(self.spring_indexes):
+            self.X[-len(self.spring_indexes)+i, :] = additional_points[i]
 
     def expectation(self):
 

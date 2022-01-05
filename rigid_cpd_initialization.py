@@ -56,10 +56,13 @@ def get_closest_points(pc1, pc2):
 
 
 
-def split_source_and_add_constraints(source_data, constraints: List[Spring]):
+def split_source_and_add_constraints(source_data, constraints: List[Spring]=[]):
 
     vertebrae_dict = {vertebral_level: Vertebra(points = source_data[source_data[:, -1] == vertebral_level, 0:3])
                         for vertebral_level in range(1, 6)}
+
+    if len(constraints) == 0:
+        return vertebrae_dict
 
     for i in range(1, 5):
 
@@ -137,6 +140,17 @@ def save_mesh(original_mesh_dir, R, t, save_dir):
     mesh.write(save_dir)
 
 
+def save_springs_points(cpd_model:BiomechanicalCpd, save_dir):
+    num_springs = len(cpd_model.spring_indexes)
+    x_springs = cpd_model.X[-num_springs::]
+    y_springs = cpd_model.TY[cpd_model.spring_indexes, :]
+
+    assert x_springs.shape[0] == y_springs.shape[0]
+    save_dir = save_dir.replace(".txt", "")
+    concatenated_points = np.concatenate((x_springs, y_springs), axis=0)
+    np.savetxt(save_dir + "_spring" + ".txt", concatenated_points)
+
+
 def process_data(data_batch, alpha, sigma, max_iterations=30, args=None):
 
     # Getting data
@@ -160,13 +174,20 @@ def process_data(data_batch, alpha, sigma, max_iterations=30, args=None):
     save_data(os.path.join(save_dir, file_id + "global_cpd.txt"), TY)
 
     # Transform constraint points
-    constraints = transform_constraints(constraints, R_reg, t_reg)
     source_pc_transformed = np.zeros( (TY.shape[0], 4) )
     source_pc_transformed[:, 0:3] = TY
     source_pc_transformed[:, -1] = source_pc[:, -1]
 
     # Splitting vertebrae for the next groupwise transformation
-    vertebrae_dict = split_source_and_add_constraints(source_pc, constraints)
+    if args.use_springs:
+        vertebrae_dict = split_source_and_add_constraints(source_pc, constraints)
+    else:
+        vertebrae_dict = split_source_and_add_constraints(source_pc)
+
+    for i in range(1, 6):
+        vertebrae_dict[i].R = R_reg
+        vertebrae_dict[i].t = t_reg
+
     biomechanical_transformations = {}
     for i in range(1, 6):
 
@@ -221,6 +242,12 @@ def process_data(data_batch, alpha, sigma, max_iterations=30, args=None):
                 save_mesh(mesh_dir, vertebrae_dict[i].R, vertebrae_dict[i].t,
                           os.path.join(iter_save_dir, file_id + "_vert" + str(i) + "_iter" + str(iteration) + ".obj"))
 
+                if args.use_springs:
+                    save_springs_points(biomechanical_transformations[i],
+                                        os.path.join(iter_save_dir, file_id + "_vert" + str(i) + "_iter" + str(iteration) + ".txt"))
+
+                print("")
+
 
 def main():
     parser = argparse.ArgumentParser(description='Data generation testing')
@@ -231,7 +258,7 @@ def main():
     parser.add_argument('--fix_variance', action='store_true')
     parser.add_argument('--use_closest_points', action='store_false')
     parser.add_argument('--use_springs', action='store_true')
-    parser.add_argument('--cpd-iterations', type=int, default=20)
+    parser.add_argument('--cpd-iterations', type=int, default=22)
 
     args = parser.parse_args()
 
